@@ -62,6 +62,8 @@ class lessc {
 	// so we know how to create error messages
 	protected $sourceParser = null;
 	protected $sourceLoc = null;
+	private $formatterName = null;
+	protected $writeComments = false;
 
 	static protected $nextImportId = 0; // uniquely identify imports
 
@@ -1303,7 +1305,7 @@ class lessc {
 					$name = $name . ": ";
 				}
 
-				$this->throwError("${name}expecting $expectedArgs arguments, got $numValues");
+				$this->throwError("{$name}expecting $expectedArgs arguments, got $numValues");
 			}
 
 			return $values;
@@ -1650,7 +1652,7 @@ class lessc {
 		}
 
 		// type based operators
-		$fname = "op_${ltype}_${rtype}";
+		$fname = "op_{$ltype}_{$rtype}";
 		if (is_callable(array($this, $fname))) {
 			$out = $this->$fname($op, $left, $right);
 			if (!is_null($out)) return $out;
@@ -1882,6 +1884,11 @@ class lessc {
 			$this->_parseFile = $fname;
 		}
 	}
+
+	protected $parser;
+	protected $env;
+	protected $scope;
+	protected $formatter;
 
 	public function compile($string, $name = null) {
 		$locale = setlocale(LC_NUMERIC, 0);
@@ -2320,6 +2327,10 @@ class lessc_parser {
 
 	// caches preg escaped literals
 	static protected $literalCache = array();
+	protected $eatWhiteDefault = true;
+	protected $lessc;
+	protected $sourceName;
+	public $writeComments = false;
 
 	public function __construct($lessc, $sourceName = null) {
 		$this->eatWhiteDefault = true;
@@ -2343,6 +2354,12 @@ class lessc_parser {
 			self::$whitePattern = '/'.$commentSingle.'[^\n]*\s*|('.self::$commentMulti.')\s*|\s+/Ais';
 		}
 	}
+
+	protected $count;
+	protected $line;
+	protected $env;
+	protected $buffer;
+	protected $seenComments;
 
 	public function parse($buffer) {
 		$this->count = 0;
@@ -2622,6 +2639,8 @@ class lessc_parser {
 	/**
 	 * recursively parse infix equation with $lhs at precedence $minP
 	 */
+	protected $inExp;
+
 	protected function expHelper($lhs, $minP) {
 		$this->inExp = true;
 		$ss = $this->seek();
@@ -3686,6 +3705,7 @@ class lessc_formatter_classic {
 	public $breakSelectors = false;
 
 	public $compressColors = false;
+	public $indentLevel;
 
 	public function __construct() {
 		$this->indentLevel = 0;
@@ -3784,5 +3804,3 @@ class lessc_formatter_lessjs extends lessc_formatter_classic {
 	public $assignSeparator = ": ";
 	public $selectorSeparator = ",";
 }
-
-
